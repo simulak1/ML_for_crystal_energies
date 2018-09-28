@@ -60,5 +60,4 @@ def load_data(N,datapath="/u/82/simulak1/unix/Desktop/doctoral_studies/kurssit/M
                     Z[j-6]=49
         materials.append(Material(La,xyz,Z,rawdata[1][i+1],rawdata[2][i+1],rawdata[3][i+1],rawdata[4][i+1],rawdata[5][i+1],rawdata[6][i+1],rawdata[7][i+1],rawdata[8][i+1],rawdata[9][i+1],rawdata[10][i+1],rawdata[11][i+1],rawdata[12][i+1],rawdata[13][i+1]))
     return(materials)
-A=load_data(12)
-print(A[11].xyz)
+
