@@ -20,17 +20,36 @@ def atom_number_hist(N):
     plt.title("Distribution of atom numbers in a simulation cell")
     
     
-
+def angles_hist(a,b,c):
+    fig,ax=plt.subplots(3)
+    ax[0].hist(a,200)
+    ax[0].set_title("Distribution of alpha angles")
+    ax[1].set_title("Distribution of beta angles")
+    ax[1].hist(b,200)
+    ax[2].hist(c,200)
+    ax[2].set_title("Distribution gamma angles")
+                        
+                            
+    
+    
 data=data.load_data(2400)
 
 Ef=np.zeros((2400,))
 Eg=np.zeros((2400,))
 N=np.zeros((2400,))
+alpha=np.zeros((2400,))
+beta=np.zeros((2400,))
+gamma=np.zeros((2400,))
+
 for i in range(2400):
     Ef[i]=data[i].Ef
     Eg[i]=data[i].Eb
     N[i]=data[i].N
-
+    alpha[i]=data[i].l_angle_alpha_deg
+    beta[i]=data[i].l_angle_beta_deg
+    gamma[i]=data[i].l_angle_gamma_deg
+    
 energies_hist(Ef,Eg)
 atom_number_hist(N)
+angles_hist(alpha,beta,gamma)
 plt.show()

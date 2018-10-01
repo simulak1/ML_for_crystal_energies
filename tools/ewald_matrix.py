@@ -7,16 +7,22 @@ The calculation is performed as in the article of this link:
 https://onlinelibrary.wiley.com/doi/full/10.1002/qua.24917
 
 '''
-import scipy
+#import scipy
+import numpy as np
+from numpy import linalg as LA
+import matplotlib.pyplot as plt
+import scipy as sp
+import scipy.special
 import sys
+import time
+#import multiprocessing as mp
+from multiprocessing import Pool
+from Poolable import make_applicable, make_mappable
+from joblib import Parallel, delayed
 sys.path[0]="/u/82/simulak1/unix/Desktop/doctoral_studies/kurssit/ML_in_MS/src"
 import data
 sys.path="$PWD"
-import numpy as np
-from numpy import linalg as LA
-#from scipy import special
-#import scipy
-import matplotlib.pyplot as plt
+
 
 def short_range(xi,xj,Zi,Zj,L,Lmax,a):
     '''
@@ -32,24 +38,46 @@ def short_range(xi,xj,Zi,Zj,L,Lmax,a):
     Lx=L[0,:]
     Ly=L[1,:]
     Lz=L[2,:]
-    
+
+    cosxy=np.dot(Lx,Ly)/LA.norm(Lx)/LA.norm(Ly)
+    angxy=np.arccos(cosxy)
+
     # The maximum distance at each of the lattice vector directions.
     # This method is a guess to include all the lattice vectors, meaning
     # that the number of images considered is made ridicously high. Think of
     # a more elegant method.
-    if(LA.norm(Lx)<Lmax or LA.norm(Ly)<Lmax or LA.norm(Lz)<Lmax):sys.exit("ERROR. SHORT_RANGE: The cutoff is too small.")
-    Nx=int((Lmax-Lmax%LA.norm(Lx))/LA.norm(Lx))+100
-    Ny=int((Lmax-Lmax%LA.norm(Ly))/LA.norm(Ly))+100
-    Nz=int((Lmax-Lmax%LA.norm(Lz))/LA.norm(Lz))+100
-
+    if(LA.norm(Lx)>Lmax or LA.norm(Ly)>Lmax or LA.norm(Lz)>Lmax):sys.exit("ERROR. SHORT_RANGE: The cutoff is too small.")
+    Nx=int((Lmax-Lmax%LA.norm(Lx))/LA.norm(Lx))+1
+    
+    count=0
+    count2=0
     # The summing over periodic images
     for i in range(Nx):
+        # The following lines aim to minimize the necessary loops over lattice images.
+        # a is the fraction of the current Lx-coord to the Lmax, i.e. a=i/Nx*Lmax.
+        # beta is the complement angle between the Lx and Ly.
+        # ds is the distance from the current Lx coordinate to the edge of the sphere
+        # of radius Lmax along the direction of Ly, calculated with cosine formula.
+        beta=2*np.pi-angxy
+        ds=LA.norm(i*Lx)*np.cos(angxy)+np.sqrt((LA.norm(i*Lx))**2*np.sin(angxy)**2+Lmax**2)
+        Ny=int((ds-ds%LA.norm(Ly))/LA.norm(Ly)+1)
         for j in range(Ny):
+            if(i>0 and j>0):
+                Rxy=i*Lx+j*Ly
+                cosxyz=np.dot(Rxy,Lz)/LA.norm(Rxy)/LA.norm(Lz)
+                angxyz=np.arccos(cosxyz)
+                beta=2*np.pi-angxyz
+                ds=LA.norm(Rxy)*np.cos(angxyz)+np.sqrt((LA.norm(Rxy))**2*np.sin(angxyz)**2+Lmax**2)
+                Nz=int((ds-ds%LA.norm(Lz))/LA.norm(Lz)+1)
+            else:
+                Nz=int((Lmax-Lmax%LA.norm(Lz))/LA.norm(Lz))+1
             for k in range(Nz):
+                count2=count2+1
                 Limage=i*Lx+j*Ly+k*Lz
                 if(LA.norm(Limage)<Lmax): # If inside cutoff
+                    count=count+1
                     xij=xij+scipy.special.erfc(a*LA.norm(xi-xj+Limage))/LA.norm(xi-xj+Limage)
-
+                    
     xij=Zi*Zj*xij
     return xij
 
@@ -76,18 +104,18 @@ def long_range(xi,xj,Zi,Zj,L,Gmax,a):
     # This method is a guess to include all the lattice vectors, meaning
     # that the number of images considered is made ridicously high. Think of
     # a more elegant method.
-    if(LA.norm(Lx)<Lmax or LA.norm(Ly)<Lmax or LA.norm(Lz)<Lmax):sys.exit("ERROR. SHORT_RANGE: The cutoff is too small.")
-    Nx=int((Gmax-Gmax%LA.norm(Gx))/LA.norm(Gx))+100
-    Ny=int((Gmax-Gmax%LA.norm(Gy))/LA.norm(Gy))+100
-    Nz=int((Gmax-Gmax%LA.norm(Gz))/LA.norm(Gz))+100
+    if(LA.norm(Gx)>Gmax or LA.norm(Gy)>Gmax or LA.norm(Gz)>Gmax):sys.exit("ERROR. LONG_RANGE: The cutoff is too small.")
+    Nx=int((Gmax-Gmax%LA.norm(Gx))/LA.norm(Gx))+10
+    Ny=int((Gmax-Gmax%LA.norm(Gy))/LA.norm(Gy))+10
+    Nz=int((Gmax-Gmax%LA.norm(Gz))/LA.norm(Gz))+10
 
     # The summing over periodic images
     for i in range(Nx):
         for j in range(Ny):
             for k in range(Nz):
                 Gimage=i*Gx+j*Gy+k*Gz
-                if(LA.norm(Gimage)<Gmax): # If inside cutoff
-                    xij=xij+np.exp(-(np.norm(Gimage)**2)/(2*a)**2)/(np.norm(Gimage)**2)*np.cos(np.dot(Gimage,ri-rj))
+                if(LA.norm(Gimage)<Gmax and i>0 and j>0 and k>0): # If inside cutoff
+                    xij=xij+np.exp(-(LA.norm(Gimage)**2)/(2*a)**2)/(LA.norm(Gimage)**2)*np.cos(np.dot(Gimage,xi-xj))
                     
     xij=Zi*Zj*xij/(np.pi*np.dot(Lx,np.cross(Ly,Lz)))
     return xij
@@ -135,29 +163,52 @@ def make_ewald_matrix(N,L,xyz,Z,Lmax,Gmax,a):
     em=np.zeros((80,80))
     # Compute only other triangle later!
     for i in range(N):
-        for j in range(N):
-            if(i==j):
-                em[i,i]=diagonal(Z[i],L,a)
-            else:
-                em[i,j]=em[i,j]+short_range(xyz[i,:],xyz[j,:],Z[i],Z[j],L,Lmax,a)
-                em[i,j]=em[i,j]+long_range(xyz[i,:],xyz[j,:],Z[i],Z[j],L,Gmax,a)
-                em[i,j]=em[i,j]+self_correction(xyz[i,:],xyz[j,:],Z[i],Z[j],L,a)
+        print(i)
+        for j in range(i+1,N):
+#            if(i==j):
+#                em[i,i]=diagonal(Z[i],L,a)
+#            else:
+
+            em[i,j]=em[i,j]+short_range(xyz[i,:],xyz[j,:],Z[i],Z[j],L,Lmax,a)
+
+            #                em[i,j]=em[i,j]+long_range(xyz[i,:],xyz[j,:],Z[i],Z[j],L,Gmax,a)
+            #                em[i,j]=em[i,j]+self_correction(xyz[i,:],xyz[j,:],Z[i],Z[j],L,a)
+            em[j,i]=em[i,j]
 
     # Arrange the EM according to row norms
     norms=np.zeros((N,))
     for i in range(N):
-        norms[i]=np.norm(em[i,:])
-    perm=np.argsort(norms)
+        norms[i]=LA.norm(em[i,:])
+    perm=np.invert(np.argsort(norms))
     em=em[perm,:]
     em=em[:,perm] # Check this!
                 
     return em
 
-data=data.load_data(1)
-print(data[0].N)
+N=1
+data=data.load_data(N)
+
+#num_cores = mp.cpu_count()
+
+#num_processes_per_node=int((N-N%num_cores)/num_cores)
+#node_indices=[]
+#for i in range(num_cores-1):
+#    node_indices.append(range(i*num_processes_per_node,(i+1)*num_processes_per_node))
+#node_indices.append(range((num_cores-1)*num_processes_per_node,N))
+
+
+
 a=np.sqrt(np.pi)*(0.01*data[0].N/np.dot(data[0].La[0,:],np.cross(data[0].La[1,:],data[0].La[2,:])))
-                  
-m=make_ewald_matrix(data[0].N,data[0].L,data[0].xyz,data[0].Z,10,100,a)
-
-
+t=time.time()
+#pool=Pool(processes=num_cores)                    
+m=make_ewald_matrix(data[0].N,data[0].La,data[0].xyz[0,:],data[0].Z[i],50,10,a)
+m=np.zeros((N,N))
+#for i in core_indices))
+#for i in core_indices:
+#    for j in i:
+#        for k in i:
+#            em[j,k]=
+            
+print("Time taken: "+str(time.time()-t))
+np.save('M1',m)
 
