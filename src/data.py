@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 class Material:
     def __init__(self,La,xyz,Z,spacegrp,N,p_al,p_ga,p_in,la1_ang,la2_ang,la3_ang,l_angle_alpha_deg,l_ang_beta_deg,l_ang_gamma_deg,Ef,Eb):
-        self.N=N
+        self.N=int(N)
         self.La=La
         self.xyz=xyz
         self.Z=Z
@@ -17,8 +17,8 @@ class Material:
         self.la2_ang=la2_ang
         self.la3_ang=la3_ang
         self.l_angle_alpha_deg=l_angle_alpha_deg
-        self.l_ang_beta_deg=l_ang_beta_deg
-        self.l_ang_gamma_deg=l_ang_gamma_deg
+        self.l_angle_beta_deg=l_ang_beta_deg
+        self.l_angle_gamma_deg=l_ang_gamma_deg
         self.Ef=Ef
         self.Eb=Eb
 
@@ -58,6 +58,6 @@ def load_data(N,datapath="/u/82/simulak1/unix/Desktop/doctoral_studies/kurssit/M
                     Z[j-6]=8
                 elif(line[4]=="In"):
                     Z[j-6]=49
-        materials.append(Material(La,xyz,Z,rawdata[1][i+1],rawdata[2][i+1],rawdata[3][i+1],rawdata[4][i+1],rawdata[5][i+1],rawdata[6][i+1],rawdata[7][i+1],rawdata[8][i+1],rawdata[9][i+1],rawdata[10][i+1],rawdata[11][i+1],rawdata[12][i+1],rawdata[13][i+1]))
+        materials.append(Material(La,xyz,Z,int(rawdata[1][i+1]),float(rawdata[2][i+1]),float(rawdata[3][i+1]),float(rawdata[4][i+1]),float(rawdata[5][i+1]),float(rawdata[6][i+1]),float(rawdata[7][i+1]),float(rawdata[8][i+1]),float(rawdata[9][i+1]),float(rawdata[10][i+1]),float(rawdata[11][i+1]),float(rawdata[12][i+1]),float(rawdata[13][i+1])))
     return(materials)
 
