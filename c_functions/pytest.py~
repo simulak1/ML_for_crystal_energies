@@ -1,0 +1,9 @@
+import numpy as np
+import _C_arraytest
+
+A=np.ones((2,2))
+B=np.ones((3,3))
+print(A)
+print(B)
+print(_C_arraytest.make_ewald_matrix(A,B))
+
