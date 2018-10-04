@@ -1,7 +1,0 @@
-import sys
-sys.path[0]="/u/82/simulak1/unix/Desktop/doctoral_studies/kurssit/ML_in_MS/src"
-import data
-sys.path="$PWD"
-import numpy as np
-import data
-
