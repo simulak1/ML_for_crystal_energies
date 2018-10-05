@@ -7,7 +7,7 @@ The calculation is performed as in the article of this link:
 https://onlinelibrary.wiley.com/doi/full/10.1002/qua.24917
 
 '''
-#import scipy
+
 import numpy as np
 from numpy import linalg as LA
 import matplotlib.pyplot as plt
@@ -15,10 +15,8 @@ import scipy as sp
 import scipy.special
 import sys
 import time
-#import multiprocessing as mp
-from multiprocessing import Pool
-from Poolable import make_applicable, make_mappable
-from joblib import Parallel, delayed
+sys.path[0]="/u/82/simulak1/unix/Desktop/doctoral_studies/kurssit/ML_in_MS/c_functions"
+import _C_arraytest
 sys.path[0]="/u/82/simulak1/unix/Desktop/doctoral_studies/kurssit/ML_in_MS/src"
 import data
 sys.path="$PWD"
@@ -39,44 +37,24 @@ def short_range(xi,xj,Zi,Zj,L,Lmax,a):
     Ly=L[1,:]
     Lz=L[2,:]
 
-    cosxy=np.dot(Lx,Ly)/LA.norm(Lx)/LA.norm(Ly)
-    angxy=np.arccos(cosxy)
-
     # The maximum distance at each of the lattice vector directions.
     # This method is a guess to include all the lattice vectors, meaning
     # that the number of images considered is made ridicously high. Think of
     # a more elegant method.
     if(LA.norm(Lx)>Lmax or LA.norm(Ly)>Lmax or LA.norm(Lz)>Lmax):sys.exit("ERROR. SHORT_RANGE: The cutoff is too small.")
     Nx=int((Lmax-Lmax%LA.norm(Lx))/LA.norm(Lx))+1
+    Ny=int((Lmax-Lmax%LA.norm(Ly))/LA.norm(Ly))+1
+    Nz=int((Lmax-Lmax%LA.norm(Lz))/LA.norm(Lz))+1
+            
     
-    count=0
-    count2=0
     # The summing over periodic images
-    for i in range(Nx):
-        # The following lines aim to minimize the necessary loops over lattice images.
-        # a is the fraction of the current Lx-coord to the Lmax, i.e. a=i/Nx*Lmax.
-        # beta is the complement angle between the Lx and Ly.
-        # ds is the distance from the current Lx coordinate to the edge of the sphere
-        # of radius Lmax along the direction of Ly, calculated with cosine formula.
-        beta=2*np.pi-angxy
-        ds=LA.norm(i*Lx)*np.cos(angxy)+np.sqrt((LA.norm(i*Lx))**2*np.sin(angxy)**2+Lmax**2)
-        Ny=int((ds-ds%LA.norm(Ly))/LA.norm(Ly)+1)
-        for j in range(Ny):
-            if(i>0 and j>0):
-                Rxy=i*Lx+j*Ly
-                cosxyz=np.dot(Rxy,Lz)/LA.norm(Rxy)/LA.norm(Lz)
-                angxyz=np.arccos(cosxyz)
-                beta=2*np.pi-angxyz
-                ds=LA.norm(Rxy)*np.cos(angxyz)+np.sqrt((LA.norm(Rxy))**2*np.sin(angxyz)**2+Lmax**2)
-                Nz=int((ds-ds%LA.norm(Lz))/LA.norm(Lz)+1)
-            else:
-                Nz=int((Lmax-Lmax%LA.norm(Lz))/LA.norm(Lz))+1
-            for k in range(Nz):
-                count2=count2+1
+    for i in range(-Nx,Nx):
+        for j in range(-Ny,Ny):
+            for k in range(-Nz,Nz):
                 Limage=i*Lx+j*Ly+k*Lz
-                if(LA.norm(Limage)<Lmax): # If inside cutoff
-                    count=count+1
-                    xij=xij+scipy.special.erfc(a*LA.norm(xi-xj+Limage))/LA.norm(xi-xj+Limage)
+                dist=LA.norm(xi-xj+Limage)
+                if(dist<Lmax): # If inside cutoff
+                    xij=xij+scipy.special.erfc(a*dist)/dist
                     
     xij=Zi*Zj*xij
     return xij
@@ -176,39 +154,36 @@ def make_ewald_matrix(N,L,xyz,Z,Lmax,Gmax,a):
             em[j,i]=em[i,j]
 
     # Arrange the EM according to row norms
-    norms=np.zeros((N,))
-    for i in range(N):
-        norms[i]=LA.norm(em[i,:])
-    perm=np.invert(np.argsort(norms))
-    em=em[perm,:]
-    em=em[:,perm] # Check this!
+    #norms=np.zeros((N,))
+    #for i in range(N):
+    #    norms[i]=LA.norm(em[i,:])
+    #perm=np.invert(np.argsort(norms))
+    #em=em[perm,:]
+    #em=em[:,perm] # Check this!
                 
     return em
 
-N=1
+N=4
 data=data.load_data(N)
 
-#num_cores = mp.cpu_count()
+cutoffs=10*np.arange(2,3)
 
-#num_processes_per_node=int((N-N%num_cores)/num_cores)
-#node_indices=[]
-#for i in range(num_cores-1):
-#    node_indices.append(range(i*num_processes_per_node,(i+1)*num_processes_per_node))
-#node_indices.append(range((num_cores-1)*num_processes_per_node,N))
+NL=len(cutoffs)
+
+results=np.zeros((NL,N,80,80))
+
+for i in range(NL):
+    t=time.time()
+    for j in range(N):
+        a=np.sqrt(np.pi)*(0.01*data[j].N/np.dot(data[j].La[0,:],np.cross(data[j].La[1,:],data[j].La[2,:])))**(1/6)
+        results[i,j,:,:]=_C_arraytest.make_ewald_matrix(data[j].N,data[j].La,data[j].xyz,data[j].Z[:],cutoffs[i],10,a)
+    print("Time taken for cutoff = "+ str(cutoffs[i]) +" : "+str(time.time()-t))
+
+np.save("results2",results)
 
 
 
-a=np.sqrt(np.pi)*(0.01*data[0].N/np.dot(data[0].La[0,:],np.cross(data[0].La[1,:],data[0].La[2,:])))
-t=time.time()
-#pool=Pool(processes=num_cores)                    
-m=make_ewald_matrix(data[0].N,data[0].La,data[0].xyz[0,:],data[0].Z[i],50,10,a)
-m=np.zeros((N,N))
-#for i in core_indices))
-#for i in core_indices:
-#    for j in i:
-#        for k in i:
-#            em[j,k]=
-            
-print("Time taken: "+str(time.time()-t))
-np.save('M1',m)
-
+#453775492
+#495998100
+#1526246020
+#1423127348
