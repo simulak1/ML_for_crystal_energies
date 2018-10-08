@@ -163,21 +163,29 @@ def make_ewald_matrix(N,L,xyz,Z,Lmax,Gmax,a):
                 
     return em
 
-N=4
+def SortRows(M):
+    indexlist = np.argsort(np.linalg.norm(M,axis=1))
+    M=M[indexlist,:]
+    return M[:,indexlist]
+    
+N=3
 data=data.load_data(N)
 
-cutoffs=10*np.arange(2,3)
+Lcut=30#10*np.arange(3,4)
+Gcut=4#0.2*np.arange(1,40)
+NL=1#len(Lcut)
+Ng=1#len(Gcut)
+results=np.zeros((Ng,N,80,80))
 
-NL=len(cutoffs)
+print(len(data))
 
-results=np.zeros((NL,N,80,80))
-
-for i in range(NL):
+for i in range(Ng):
     t=time.time()
     for j in range(N):
         a=np.sqrt(np.pi)*(0.01*data[j].N/np.dot(data[j].La[0,:],np.cross(data[j].La[1,:],data[j].La[2,:])))**(1/6)
-        results[i,j,:,:]=_C_arraytest.make_ewald_matrix(data[j].N,data[j].La,data[j].xyz,data[j].Z[:],cutoffs[i],10,a)
-    print("Time taken for cutoff = "+ str(cutoffs[i]) +" : "+str(time.time()-t))
+        results[0,j,:,:]=_C_arraytest.make_ewald_matrix(data[j].N,data[j].La,data[j].xyz,data[j].Z,30.0,4.0,a)
+        results[0,j,:,:]=SortRows(results[0,j,:,:])
+    print("Time taken : "+str(time.time()-t))
 
 np.save("results2",results)
 
