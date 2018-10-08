@@ -5,6 +5,7 @@
 #include "C_arraytest.h"
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <omp.h>
 
 /* #### Globals #################################### */
@@ -67,70 +68,43 @@ int  not_doublevector(PyArrayObject *vec)  {
   return 0;
 }
 
-double dot(double *x, double *y){
+double dot(double x[3], double y[3]){
   double out=0;
   for (int i=0;i<3;i++){
     out=out+x[i]*y[i];
-  }
+    }
   return out;
 }
 
 double *cross(double *x, double *y){
-  static double out[3];
+  double *out=malloc(3*sizeof(double));
   out[0]=x[1]*y[2]-x[2]*y[1];
-  out[1]=-1.0*x[0]*y[2]-x[2]*y[0];
+  out[1]=-1.0*(x[0]*y[2]-x[2]*y[0]);
   out[2]=x[0]*y[1]-x[1]*y[0];
-  return out;
-    
+  return out;    
 }
 
 
 
 double *LinearVectorSum(double *x, double *y, double *z, int i, int j, int k){
-  static double out[3];
+  double *out=malloc(3*sizeof(double));
   out[0]=i*x[0]+j*y[0]+k*z[0];
   out[1]=i*x[1]+j*y[1]+k*z[1];
   out[2]=i*x[2]+j*y[2]+k*z[2];
   return out;  
 }
 
-double **reciprocal_lattice(double **L){
-  double pi=acos(-1.0);
-  double *Lx,*Ly,*Lz,*Gx,*Gy,*Gz,V,out[3][3];
-
-  Lx=L[0];
-  Ly=L[1];
-  Lz=L[2];
-
-  V=dot(Lx,cross(Ly,Lz));
-
-  Gx=cross(Ly,Lz);
-  Gy=cross(Lz,Lx);
-  Gz=cross(Lx,Ly);
-  for (int i=0;i<3;i++){
-    Gx[i]=2.0*pi*Gx[i]/V;
-    Gy[i]=2.0*pi*Gy[i]/V;
-    Gz[i]=2.0*pi*Gz[i]/V;
-  }
-  for (int i=0;i<3;i++){
-    out[0][i]=Gx[i];
-    out[1][i]=Gy[i];
-    out[2][i]=Gz[i];
-  }
-
-  return out;
-  
-}
-
 double short_range(double *xi, double *xj, double Zi, double Zj, double **L, double Lmax, double a){
 
-  double *Lx,*Ly,*Lz,*Lim,*rij,dist,Lx2,Ly2,Lz2,out;
+  double Lx[3],Ly[3],Lz[3],*Lim,*rij,dist,Lx2,Ly2,Lz2,out;
   int Nx,Ny,Nz,i,j,k;
 
-  Lx=L[0];
-  Ly=L[1];
-  Lz=L[2];
-
+  for (i=0;i<3;i++){
+  Lx[i]=L[0][i];
+  Ly[i]=L[1][i];
+  Lz[i]=L[2][i];
+  }
+  
   Lx2=sqrt(dot(Lx,Lx));
   Ly2=sqrt(dot(Ly,Ly));
   Lz2=sqrt(dot(Lz,Lz));
@@ -160,14 +134,51 @@ double short_range(double *xi, double *xj, double Zi, double Zj, double **L, dou
   return out;
 }
 
-double long_range(double *xi, double *xj, double Zi, double Zj, double **G, double **L, double a){
+double long_range(double *xi, double *xj, double Zi, double Zj,double G[3][3],double Gmax, double a, double V){
+
+  int Nx,Ny,Nz,i,j,k;
+  double Gx[3],Gy[3],Gz[3],Gx2,Gy2,Gz2,*Gim,Gim2,pi,*rij,dist,out,d;
+
+  pi=acos(-1.0);
   
+  for (i=0;i<3;i++){
+  Gx[i]=G[0][i];
+  Gy[i]=G[1][i];
+  Gz[i]=G[2][i];
+  }
+  Gx2=sqrt(dot(Gx,Gx));
+  Gy2=sqrt(dot(Gy,Gy));
+  Gz2=sqrt(dot(Gz,Gz));
+  
+  Nx=(Gmax-fmod(Gmax,Gx2))/Gx2+2;
+  Ny=(Gmax-fmod(Gmax,Gy2))/Gy2+2;
+  Nz=(Gmax-fmod(Gmax,Gz2))/Gz2+2;
+  
+  rij=LinearVectorSum(Gx,xi,xj,0,1,-1);
+  
+  out=0;
+  for (i=-Nx;i<Nx;i++){
+    for (j=-Ny;j<Ny;j++){
+      for (k=-Nz;k<Nz;k++){
+	Gim=LinearVectorSum(Gx,Gy,Gz,i,j,k);
+	Gim2=dot(Gim,Gim);
+	dist=sqrt(Gim2);
+	if(dist<Gmax && abs(dist)>0.0){
+	  d=1/Gim2;
+	  out=out+exp(-1.0*Gim2/(4*pow(a,2)))*cos(dot(Gim,rij));///pow(dist,2);
+	}
+	free(Gim);
+      }
+    }
+  }
+  out=out*Zi*Zj/(pi*V);
+  return out;
 }
 
 static PyObject *make_ewald_matrix(PyObject *self, PyObject *args){
 
   PyArrayObject *L,*xyz,*Z, *matout;
-  double **cL,**cxyz,*cZ, **cout, **G, Lmax, Gmax, a;
+  double **cL,**cxyz,*cZ, **cout, *Lx,*Ly,*Lz, G[3][3],*Gx,*Gy,*Gz, Lmax, Gmax, a,pi,V;
   int dims[2],Natoms;
   
   /* Parse tuples separately since args will differ between C fcns */
@@ -196,7 +207,24 @@ static PyObject *make_ewald_matrix(PyObject *self, PyObject *args){
   
   cout=pymatrix_to_Carrayptrs(matout);
 
-  G=reciprocal_lattice(cL);
+  /* Calculate the volume of the simulation cell  */
+  Lx=cL[0];
+  Ly=cL[1];
+  Lz=cL[2];
+  V=dot(Lx,cross(Ly,Lz));
+
+  /* Calculate the reciprocal lattice vectors */
+  Gx=cross(Ly,Lz);
+  Gy=cross(Lz,Lx);
+  Gz=cross(Lx,Ly);
+  pi=acos(-1.0);
+    for (int i=0;i<3;i++){
+      G[0][i]=2.0*pi*Gx[i]/V;
+      G[1][i]=2.0*pi*Gy[i]/V;
+      G[2][i]=2.0*pi*Gz[i]/V;
+    }
+
+  
   /* Do the calculation. */
 ///#pragma omp parallel for
   for (int i=0; i<80; i++)  {
@@ -204,8 +232,9 @@ static PyObject *make_ewald_matrix(PyObject *self, PyObject *args){
       cout[i][j]=0.0;
       if(i<Natoms && j<Natoms){
 	cout[i][j]+= short_range(cxyz[i],cxyz[j],cZ[i],cZ[j],cL,Lmax,a);
+	cout[i][j]+=long_range(cxyz[i],cxyz[j],cZ[i],cZ[j],G,Gmax,a,V);
 	cout[j][i]=cout[i][j];
-      }
+	 }
     }
   }
 
