@@ -168,24 +168,24 @@ def SortRows(M):
     M=M[indexlist,:]
     return M[:,indexlist]
     
-N=3
+N=1
 data=data.load_data(N)
 
-Lcut=30#10*np.arange(3,4)
+Lcut=1*np.arange(1,10)
 Gcut=4#0.2*np.arange(1,40)
-NL=1#len(Lcut)
+NL=len(Lcut)
 Ng=1#len(Gcut)
-results=np.zeros((Ng,N,80,80))
+results=np.zeros((NL,N,80,80))
 
 print(len(data))
 
-for i in range(Ng):
+for i in range(NL):
     t=time.time()
     for j in range(N):
         a=np.sqrt(np.pi)*(0.01*data[j].N/np.dot(data[j].La[0,:],np.cross(data[j].La[1,:],data[j].La[2,:])))**(1/6)
-        results[0,j,:,:]=_C_arraytest.make_ewald_matrix(data[j].N,data[j].La,data[j].xyz,data[j].Z,30.0,4.0,a)
-        results[0,j,:,:]=SortRows(results[0,j,:,:])
-    print("Time taken : "+str(time.time()-t))
+        results[i,j,:,:]=_C_arraytest.make_ewald_matrix(data[j].N,data[j].La,data[j].xyz,data[j].Z,5.0,Lcut[i],a)
+        #results[i,j,:,:]=SortRows(results[0,j,:,:])
+    print("L="+str(Lcut[i])+", Time taken : "+str(time.time()-t))
 
 np.save("results2",results)
 

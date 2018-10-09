@@ -21,14 +21,33 @@ def atom_number_hist(N):
     
     
 def angles_hist(a,b,c):
-    fig,ax=plt.subplots(3)
+    fig,ax=plt.subplots(3,sharex=True)
     ax[0].hist(a,200)
     ax[0].set_title("Distribution of alpha angles")
     ax[1].set_title("Distribution of beta angles")
+#    ax[0].set_xlim([0,180])
     ax[1].hist(b,200)
     ax[2].hist(c,200)
+#    ax[1].set_xlim([0,180])
+#    ax[2].set_xlim([0,180])
+            
     ax[2].set_title("Distribution gamma angles")
                         
+def mixture_hist(a,b,c):
+    a=100*a
+    b=100*b
+    c=100*c
+    fig,ax=plt.subplots(3,sharex=True)
+    ax[0].hist(a,200)
+    ax[0].set_title("Distribution of Al percentages")
+    ax[1].set_title("Distribution of Ga percentages")
+    #    ax[0].set_xlim([0,180])
+    ax[1].hist(b,200)
+    ax[2].hist(c,200)
+    #    ax[1].set_xlim([0,180])
+    #    ax[2].set_xlim([0,180])
+    
+    ax[2].set_title("Distribution of In percentages")
                             
     
     
@@ -40,6 +59,10 @@ N=np.zeros((2400,))
 alpha=np.zeros((2400,))
 beta=np.zeros((2400,))
 gamma=np.zeros((2400,))
+peral=np.zeros((2400,))
+perga=np.zeros((2400,))
+perin=np.zeros((2400,))
+
 
 for i in range(2400):
     Ef[i]=data[i].Ef
@@ -48,8 +71,13 @@ for i in range(2400):
     alpha[i]=data[i].l_angle_alpha_deg
     beta[i]=data[i].l_angle_beta_deg
     gamma[i]=data[i].l_angle_gamma_deg
+    peral[i]=data[i].p_al
+    perga[i]=data[i].p_ga
+    perin[i]=data[i].p_in
+            
     
 energies_hist(Ef,Eg)
 atom_number_hist(N)
 angles_hist(alpha,beta,gamma)
+mixture_hist(peral,perga,perin)
 plt.show()

@@ -231,7 +231,7 @@ static PyObject *make_ewald_matrix(PyObject *self, PyObject *args){
     for (int j=i+1; j<80; j++)  {
       cout[i][j]=0.0;
       if(i<Natoms && j<Natoms){
-	cout[i][j]+= short_range(cxyz[i],cxyz[j],cZ[i],cZ[j],cL,Lmax,a);
+	//cout[i][j]+= short_range(cxyz[i],cxyz[j],cZ[i],cZ[j],cL,Lmax,a);
 	cout[i][j]+=long_range(cxyz[i],cxyz[j],cZ[i],cZ[j],G,Gmax,a,V);
 	cout[j][i]=cout[i][j];
 	 }
