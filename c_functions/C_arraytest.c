@@ -84,8 +84,6 @@ double *cross(double *x, double *y){
   return out;    
 }
 
-
-
 double *LinearVectorSum(double *x, double *y, double *z, int i, int j, int k){
   double *out=malloc(3*sizeof(double));
   out[0]=i*x[0]+j*y[0]+k*z[0];
@@ -126,6 +124,8 @@ double short_range(double *xi, double *xj, double Zi, double Zj, double **L, dou
 
 	  out=out+erfc(a*dist)/dist;
 	}
+	free(Lim);
+	free(rij);
       }
     }
     }
@@ -172,7 +172,18 @@ double long_range(double *xi, double *xj, double Zi, double Zj,double G[3][3],do
     }
   }
   out=out*Zi*Zj/(pi*V);
+  free(rij);
   return out;
+}
+
+double constant_term(double Zi, double Zj, double a, double V){
+  double pi=acos(-1.0);
+  return -(pow(Zi,2)+pow(Zj,2))*a/sqrt(pi)-pow(Zi+Zj,2)*pi/(2*V*pow(a,2));
+}
+
+double diagonal(double Zi, double a, double V){
+  double pi=acos(-1.0);
+  return -pow(Zi,2)*a/sqrt(pi)-pow(Zi,2)*pi/(2*pow(a,2)*V);
 }
 
 static PyObject *make_ewald_matrix(PyObject *self, PyObject *args){
@@ -211,7 +222,8 @@ static PyObject *make_ewald_matrix(PyObject *self, PyObject *args){
   Lx=cL[0];
   Ly=cL[1];
   Lz=cL[2];
-  V=dot(Lx,cross(Ly,Lz));
+  double *crossyz=cross(Ly,Lz);
+  V=dot(Lx,crossyz);
 
   /* Calculate the reciprocal lattice vectors */
   Gx=cross(Ly,Lz);
@@ -231,18 +243,29 @@ static PyObject *make_ewald_matrix(PyObject *self, PyObject *args){
     for (int j=i+1; j<80; j++)  {
       cout[i][j]=0.0;
       if(i<Natoms && j<Natoms){
-	//cout[i][j]+= short_range(cxyz[i],cxyz[j],cZ[i],cZ[j],cL,Lmax,a);
+	cout[i][j]+= short_range(cxyz[i],cxyz[j],cZ[i],cZ[j],cL,Lmax,a);
 	cout[i][j]+=long_range(cxyz[i],cxyz[j],cZ[i],cZ[j],G,Gmax,a,V);
+	cout[i][j]+=constant_term(cZ[i],cZ[j],a,V);
 	cout[j][i]=cout[i][j];
-	 }
+      }
     }
   }
 
+  /* Diagonal terms  */
+  for (int i=0;i<Natoms;i++){
+    cout[i][i]=diagonal(cZ[i],a,V);
+  }
+
+  
   /* Free memory, close file and return */
+  free(crossyz);
+  free(Gx);
+  free(Gy);
+  free(Gz);
   free_Carrayptrs(cL);
   free_Carrayptrs(cxyz);
   free_Carrayptrs(cout);
-  ///free_Carrayptrs(cZ);
+  free_Carrayptrs(cZ);
   return PyArray_Return(matout);
   
   
