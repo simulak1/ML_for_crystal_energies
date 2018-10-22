@@ -7,10 +7,10 @@ import data
 preds=np.load("../src/predictions.npy")
 materials=data.load_data(np.arange(2400))
 
-targets=np.zeros((300,))
+targets=np.zeros((200,))
 
-for i in range(300):
-    targets[i]=materials[i+2000].Ef
+for i in range(200):
+    targets[i]=materials[i+2200].Ef
 
 plt.figure(1)
 plt.plot(targets,preds,'*')
