@@ -87,9 +87,16 @@ def main(model='mlp', num_epochs=500,continuation_run=0,target_property='Ef'):
 
     # Next, compile a function that returns the predicted values
     pred_fn = theano.function([input_var], prediction)
-    
-    # Initialize stuff to save for analysis of the algorithm
-    
+    ##########################################################
+    # Initialize stuff to save for analysis of the algorithm #
+    ##########################################################
+    allparams=[]                                             #
+    isave=int(num_epochs/100)                                #
+    if isave==0:isave=1                                      #
+    train_errors=np.zeros((num_epochs,))                     #
+    val_errors=np.zeros((num_epochs,))                       #
+    ##########################################################
+    ##########################################################
     # Finally, launch the training loop.
     print("Starting training...")
     # We iterate over epochs:
@@ -112,6 +119,14 @@ def main(model='mlp', num_epochs=500,continuation_run=0,target_property='Ef'):
             val_err += err
             val_batches += 1
 
+        ####################### Save necessary stuff for further analysis #################
+        # Save parameters. The wrestling with isave is to ensure we don't run out of memory
+        if epoch%isave==0:
+            allparams.append([*lasagne.layers.get_all_param_values(network)])
+        train_errors[epoch]=train_err
+        val_errors[epoch]=val_err
+        ###################################################################################
+            
         # Then we print the results for this epoch:
         print("Epoch {} of {} took {:.3f}s".format(
             epoch + 1, num_epochs, time.time() - start_time))
@@ -129,14 +144,18 @@ def main(model='mlp', num_epochs=500,continuation_run=0,target_property='Ef'):
         test_batches += 1
     print("Final results:")
     print("  test loss:\t\t\t{:.6f}".format(test_err / test_batches))
-    
+
+    np.savez('params.npz', *allparams)
+        
     # Optionally, you could now dump the network weights to a file like this:
     np.savez('model.npz', *lasagne.layers.get_all_param_values(network))
     # Then save predictions for comparing against true values
-    for batch in datahandle.iterate_minibatches(X_test, y_test, 300, shuffle=False):
+    for batch in datahandle.iterate_minibatches(X_test, y_test, 200, shuffle=False):
         inputs, targets = batch
         preds = pred_fn(inputs)
     np.save('predictions',preds)
+    np.save('training_errors',train_errors)
+    np.save('validation_errors',val_errors)
     
 
 if __name__ == '__main__':
