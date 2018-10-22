@@ -10,9 +10,9 @@ def load_ewald(target):
     materials=data.load_data(np.arange(2400))
 
     # Load all of the ewald matrices
-    Xdata=np.zeros((2300,80,80))
-    for i in range(2300):
-        Xdata[i,:,:]=np.load('../data/ewald_matrices/'+str(i+1)+".npy")
+    Xdata=np.zeros((2400,80,80))
+    for i in range(2400):
+        Xdata[i,:,:]=np.load('../data/ewald_matrices/'+str(i)+".npy")
 
     # Reshape and normalize the data
     #print(np.max(Xdata))
@@ -21,11 +21,11 @@ def load_ewald(target):
     Xdata=Xdata.reshape(-1,1,80,80)
 
     # Split the data into training, validation and test sets
-    Xtrain,Xval,Xtest=Xdata[:1600],Xdata[1600:2000],Xdata[2000:2300]
+    Xtrain,Xval,Xtest=Xdata[:1800],Xdata[1800:2200],Xdata[2200:2400]
 
-    Ydata=np.zeros((2300,))
+    Ydata=np.zeros((2400,))
     # Load targets
-    for i in range(2300):
+    for i in range(2400):
         if target=='Ef':
             Ydata[i]=materials[i].Ef
         elif target=='Eb':
@@ -34,7 +34,7 @@ def load_ewald(target):
             sys.exit("Error: unknown target property.")
 
     # Split the targets
-    Ytrain,Yval,Ytest=Ydata[:1600],Ydata[1600:2000],Ydata[2000:2300]
+    Ytrain,Yval,Ytest=Ydata[:1800],Ydata[1800:2200],Ydata[2200:2400]
 
     return Xtrain,Ytrain,Xval,Yval,Xtest,Ytest
         
