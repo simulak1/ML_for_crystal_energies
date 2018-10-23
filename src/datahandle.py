@@ -27,7 +27,7 @@ def load_ewald(target):
     # Load targets
     for i in range(2400):
         if target=='Ef':
-            Ydata[i]=materials[i].Ef
+            Ydata[i]=100*materials[i].Ef
         elif target=='Eb':
             Ydata[i]=materials[i].Eb
         else:
