@@ -16,6 +16,7 @@ def load_ewald(target,datapath):
 
     # Reshape and normalize the data
     #print(np.max(Xdata))
+    Xdata=np.float32(Xdata)
     Xdata=np.negative(Xdata)
     Xdata=Xdata/np.max(Xdata)
     Xdata=Xdata.reshape(-1,1,80,80)
