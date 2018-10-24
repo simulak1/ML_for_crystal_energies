@@ -5,66 +5,94 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 
-def imgplot(l,params):
-    Niter=len(params)
+def convimgplot(params,layer,Niter,Nchannel,xcol,ycol):
     plt.ion()
-    fig,ax=plt.subplots(1)
+    fig,ax=plt.subplots(xcol,ycol)
     for i in range(Niter):
-        ax.imshow(params[i][l])
-        ax.set_title("Epoch: "+str(i))
+        ch=0
+        for j in range(xcol):
+            for k in range(ycol):
+                ax[j,k].clear()
+                if(j==0 and k==0):ax[0,0].set_title("Iteration step: "+str(i))
+                ax[j,k].imshow(params[i][layer][ch][0])
+                ch=ch+1
         fig.canvas.draw()
-        plt.pause(0.1)
-        ax.clear()
-        
-def lineplot(l,nodeind, weightind, params):
-    Niter=len(params)
-    Nsamples=len(nodeind)
+        plt.pause(.1)
 
-    weights=np.zeros((Niter,Nsamples))
-    biases=np.zeros((Niter,Nsamples))
+def convlineplot(params,N,layer,Niter,Nchannels):
+    x=params[0][layer].flatten(0)
+    Nparams=len(x)
+    RandomIndices=np.random.randint(Nparams,size=N)
 
+    weights=np.zeros((Niter,N))
+    biases=np.zeros((Niter,Nchannels))
     for i in range(Niter):
-        for j in range(Nsamples):
-            biases[i,j]=params[i][l-1][j]
-            weights[i,j]=params[i][l][nodeind[j],weightind[j]]
-    
+        x=params[i][layer].flatten(0)
+        weights[i,:]=x[RandomIndices]
+        biases[i,:]=params[i][layer+1]
+
     fig,ax=plt.subplots(2)
-    for i in range(Nsamples):
+    for i in range(N):
         ax[0].plot(weights[:,i])
+    for i in range(Nchannels):
         ax[1].plot(biases[:,i])
     plt.show()
 
-def main(layer=0, N_samples=10, plt_type='lineplot',speed=1):
+def lineplot(params,N,layer,Niter):
+    x=params[0][layer]
+    Nparams=len(x.flatten(0))
+    Nbiases=x.shape[1]
+    RandomIndices=np.random.randint(Nparams,size=N)
+    
+    weights=np.zeros((Niter,N))
+    biases=np.zeros((Niter,Nbiases))
+    for i in range(Niter):
+        x=params[i][layer].flatten(0)
+        weights[i,:]=x[RandomIndices]
+        biases[i,:]=params[i][layer+1]
+
+    fig,ax=plt.subplots(2)
+    for i in range(N):
+        ax[0].plot(weights[:,i])
+    for i in range(Nbiases):
+        ax[1].plot(biases[:,i])
+    plt.show()
+    
+def main(layer=0, N_samples=10, plt_type='lineplot',speed=1,xcol=1,ycol=1):
     # Load parameters
     with np.load('params.npz') as f:
         param_values = [f['arr_%d' % i] for i in range(len(f.files))]
 
+    print("The shape of the network layers are:")
+    for i in range(len(param_values[0])):
+        print("layer "+str(i+1)+" : "+ str(param_values[0][i].shape))
+    
     Niter=len(param_values)
 
-    if layer>0:
-        LayerWeightIndex=2*layer
-        LayerBiasIndex=2*layer-1
-    elif layer==0:
-        sys.exit("Cannot plot the input layer weight at the moment")
+    LayerIndex=2*layer
+    if len(param_values[0][LayerIndex].shape)==1:
+        sys.exit('You probably are not using convlayers, so code this script with better indexing, or use old code.')
+    elif len(param_values[0][LayerIndex].shape)<3:
+        IsConvLayer=False
+    else:
+        IsConvLayer=True
 
-    # This index 1 is not general enough for beautiful code, but works for now
-    weights=param_values[1][LayerWeightIndex]
-    biases=param_values[1][LayerBiasIndex]
-    
-    NNodesInLayer=len(biases)
-    NWeightsInNode=weights[0].shape[0]
-
-    if plt_type=='lineplot':
-        SampleNodeIndices=np.random.randint(NNodesInLayer,size=N_samples)
-        SampleWeightIndices=np.random.randint(NWeightsInNode,size=N_samples)
-        lineplot(LayerWeightIndex,SampleNodeIndices,SampleWeightIndices,param_values)
-    elif plt_type=='imgplot':
-        imgplot(LayerWeightIndex,param_values)
-        
+    if IsConvLayer:
+        NChannels=param_values[0][LayerIndex].shape[0]
+        if(plt_type=='lineplot'):
+            convlineplot(param_values,N_samples,LayerIndex,Niter,NChannels)
+        elif(plt_type=='imgplot'):
+            convimgplot(param_values,LayerIndex,Niter,NChannels,xcol,ycol)
+    else:
+        if plt_type=='imgplot':
+            sys.exit("Image plot for a fully connected layer is a stupid fucking idea.")
+        lineplot(param_values,N_samples,LayerIndex,Niter)
+            
+            
 if __name__ == '__main__':
     if ('--help' in sys.argv) or ('-h' in sys.argv):
-        print("A tool for plotting weights and biases of a neural network.")
-        print("Syntax: python mnist.py [Index of layer] [Number of random samples] [line plot or matrix image] [speed of image plot]")
+        print("A tool for plotting weights and biases of a convolutional neural network.")
+        print("Syntax: python mnist.py [Index of layer] [Number of random samples] [line plot or matrix image] [shape of the subplot of channel weights]  [speed of image plot]")
         print("Index of layer           : 0 means the input layer, calculate further from that.")
         print("Number of random samples : If line plot is used, you probably want only some random weights for clarity")
         print("plt_type                 : either 'lineplot' or 'image' ")
@@ -77,7 +105,10 @@ if __name__ == '__main__':
             kwargs['N_samples'] = int(sys.argv[2])
         if len(sys.argv) > 3:
             kwargs['plt_type'] = sys.argv[3]
-        if len(sys.argv) > 4:
+        if len(sys.argv) > 5:
+            kwargs['xcol'] = int(sys.argv[4])
+            kwargs['ycol'] = int(sys.argv[5])
+        if len(sys.argv) > 6:
             kwargs['speed'] = sys.argv[4]
 
 
