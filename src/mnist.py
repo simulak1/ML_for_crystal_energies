@@ -30,7 +30,7 @@ import lasagne
 def main(model='mlp', num_epochs=500,continuation_run=0,target_property='Ef'):
     # Load the dataset
     print("Loading data...")
-    X_train, y_train, X_val, y_val, X_test, y_test = datahandle.load_ewald(target_property)
+    X_train, y_train, X_val, y_val, X_test, y_test = datahandle.load_ewald(target_property,datapath)
 
     # Prepare Theano variables for inputs and targets
     input_var = T.tensor4('inputs')
@@ -188,6 +188,8 @@ if __name__ == '__main__':
         if len(sys.argv) > 3:
             kwargs['continuation_run'] = int(sys.argv[3])
         if len(sys.argv) > 4:
+            kwargs['datapath'] = sys.argv[4]
+        if len(sys.argv) > 5:
             kwargs['target_property'] = sys.argv[4]
             
             
