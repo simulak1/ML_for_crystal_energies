@@ -67,10 +67,10 @@ def main(model='mlp', num_epochs=500,continuation_run=0,target_property='Ef'):
     # parameters at each training step. Here, we'll use Stochastic Gradient
     # Descent (SGD) with Nesterov momentum, but Lasagne offers plenty more.
     params = lasagne.layers.get_all_params(network, trainable=True)
-    updates = lasagne.updates.nesterov_momentum(
-        loss, params, learning_rate=0.005, momentum=0.4)
+    updates = lasagne.updates.adam(
+        loss, params, learning_rate=0.002, beta1=0.9, beta2=0.999,epsilon=1e-08)
     #Adam: #            loss, params, learning_rate=0.005, beta1=0.9, beta2=0.999,epsilon=1e-08)
-
+    # Nesterov: # loss, params, learning_rate=0.005, momentum=0.4)
     # Create a loss expression for validation/testing. The crucial difference
     # here is that we do a deterministic forward pass through the network,
     # disabling dropout layers.
