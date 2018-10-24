@@ -43,8 +43,9 @@ def main(layer=0, N_samples=10, plt_type='lineplot',speed=1,xcol=1,ycol=1):
     with np.load('params.npz') as f:
         param_values = [f['arr_%d' % i] for i in range(len(f.files))]
 
+    print("The shape of the network layers are:")
     for i in range(len(param_values[0])):
-        print(param_values[0][i].shape)
+        print("layer "+str(i+1)+" : "+ str(param_values[0][i].shape))
     
     Niter=len(param_values)
 
