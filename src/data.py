@@ -22,7 +22,7 @@ class Material:
         self.Ef=Ef
         self.Eb=Eb
 
-def load_data(indices,datapath="/u/82/simulak1/unix/Desktop/doctoral_studies/kurssit/ML_in_MS/data"):
+def load_data(indices,datapath):
     ''' 
     Takes in the number of desired datapoints, picks random indices 
     to load data and saves the datapoints into Materials-objects.
@@ -32,7 +32,7 @@ def load_data(indices,datapath="/u/82/simulak1/unix/Desktop/doctoral_studies/kur
     rawdata=pandas.read_csv(datapath+"/train.csv",header=None)
     for i in indices:
         La=np.zeros((3,3))
-        with open(datapath+"/train/"+str(i+1)+"/geometry.xyz") as f:
+        with open(datapath+"/data/train/"+str(i+1)+"/geometry.xyz") as f:
             lines=f.readlines()
             Nlines=len(lines)
             Natoms=Nlines-6

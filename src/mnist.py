@@ -30,7 +30,7 @@ import lasagne
 def main(model='mlp', num_epochs=500,continuation_run=0,target_property='Ef'):
     # Load the dataset
     print("Loading data...")
-    X_train, y_train, X_val, y_val, X_test, y_test = datahandle.load_ewald(target_property)
+    X_train, y_train, X_val, y_val, X_test, y_test = datahandle.load_ewald(target_property,datapath)
 
     # Prepare Theano variables for inputs and targets
     input_var = T.tensor4('inputs')
@@ -75,6 +75,7 @@ def main(model='mlp', num_epochs=500,continuation_run=0,target_property='Ef'):
         loss, params, learning_rate=0.0005, beta1=0.9, beta2=0.999,epsilon=1e-08)
     # Nesterov: #    loss, params, learning_rate=0.005, momentum=0.4)
     #Adam: #            loss, params, learning_rate=0.005, beta1=0.9, beta2=0.999,epsilon=1e-08)
+    # Nesterov: # loss, params, learning_rate=0.005, momentum=0.4)
 
     # Create a loss expression for validation/testing. The crucial difference
     # here is that we do a deterministic forward pass through the network,
@@ -188,6 +189,8 @@ if __name__ == '__main__':
         if len(sys.argv) > 3:
             kwargs['continuation_run'] = int(sys.argv[3])
         if len(sys.argv) > 4:
+            kwargs['datapath'] = sys.argv[4]
+        if len(sys.argv) > 5:
             kwargs['target_property'] = sys.argv[4]
             
             

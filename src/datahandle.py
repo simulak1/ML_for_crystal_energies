@@ -4,15 +4,15 @@ import theano.tensor as T
 import data
 import sys
 
-def load_ewald(target):
+def load_ewald(target,datapath):
 
     # Load labels
-    materials=data.load_data(np.arange(2400))
+    materials=data.load_data(np.arange(2400),datapath)
 
     # Load all of the ewald matrices
     Xdata=np.zeros((2400,80,80))
     for i in range(2400):
-        Xdata[i,:,:]=np.load('../data/ewald_matrices/'+str(i)+".npy")
+        Xdata[i,:,:]=np.load(datapath+'/data/ewald_matrices/'+str(i)+".npy")
 
     # Reshape and normalize the data
     #print(np.max(Xdata))
