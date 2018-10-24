@@ -14,6 +14,6 @@ for i in range(200):
 
 xx=100*np.arange(0,0.5,0.001)
 plt.figure(1)
-plt.plot(targets,preds,'*',xx,xx,'r-')
+plt.plot(targets,preds,'*',xx,xx,'r-',markersize=12)
 
 plt.show()
