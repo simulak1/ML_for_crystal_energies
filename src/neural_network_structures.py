@@ -88,7 +88,7 @@ def build_cnn(input_var=None):
     # Convolutional layer with 32 kernels of size 5x5. Strided and padded
     # convolutions are supported as well; see the docstring.
     network = lasagne.layers.Conv2DLayer(
-            network, num_filters=9, filter_size=(5, 5),
+            network, num_filters=18, filter_size=(5, 5),
             nonlinearity=lasagne.nonlinearities.rectify,
             W=lasagne.init.GlorotUniform())
     # Expert note: Lasagne provides alternative convolutional layers that
@@ -123,3 +123,28 @@ def build_cnn(input_var=None):
 
     return network
 
+def build_custom_cnn(input_var=None,convdepth=1, filterwidth=5, nch=9, fcdepth=1, width=100, drop=.5):
+    
+    network = lasagne.layers.InputLayer(shape=(None, 1, 80, 80),
+                                        input_var=input_var)
+
+    nonlin = lasagne.nonlinearities.rectify
+    for _ in range(convdepth):
+        network = lasagne.layers.Conv2DLayer(
+            network, num_filters=nch, filter_size=(filterwidth, filterwidth),
+            nonlinearity=nonlin, W=lasagne.init.GlorotUniform())
+        network = lasagne.layers.MaxPool2DLayer(network, pool_size=(2, 2))
+
+    for _ in range(fcdepth-1):
+        network = lasagne.layers.DenseLayer(
+            lasagne.layers.dropout(network, p=drop),
+            num_units=width, nonlinearity=nonlin)
+
+    network = lasagne.layers.DenseLayer(
+        lasagne.layers.dropout(network, p=drop),
+        num_units=1,
+        nonlinearity=nonlin)
+
+    return network
+
+    

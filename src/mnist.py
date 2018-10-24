@@ -46,6 +46,10 @@ def main(model='mlp', num_epochs=500,continuation_run=0,target_property='Ef'):
                                    float(drop_in), float(drop_hid))
     elif model == 'cnn':
         network = NNS.build_cnn(input_var)
+    elif model.startswith('custom_cnn:'):
+        nconv, fwidth, nch, nfc, width, drop = model.split(':', 1)[1].split(',')
+        network = NNS.build_custom_cnn(input_var,int(nconv), int(fwidth), int(nch),
+                                       int(nfc), int(width), float(drop))
     else:
         print("Unrecognized model type %r." % model)
         return
@@ -71,6 +75,7 @@ def main(model='mlp', num_epochs=500,continuation_run=0,target_property='Ef'):
         loss, params, learning_rate=0.002, beta1=0.9, beta2=0.999,epsilon=1e-08)
     #Adam: #            loss, params, learning_rate=0.005, beta1=0.9, beta2=0.999,epsilon=1e-08)
     # Nesterov: # loss, params, learning_rate=0.005, momentum=0.4)
+
     # Create a loss expression for validation/testing. The crucial difference
     # here is that we do a deterministic forward pass through the network,
     # disabling dropout layers.
@@ -106,7 +111,7 @@ def main(model='mlp', num_epochs=500,continuation_run=0,target_property='Ef'):
         train_err = 0
         train_batches = 0
         start_time = time.time()
-        for batch in datahandle.iterate_minibatches(X_train, y_train, 200, shuffle=True):
+        for batch in datahandle.iterate_minibatches(X_train, y_train, 50, shuffle=True):
             inputs, targets = batch
             train_err += train_fn(inputs, targets)
             train_batches += 1
@@ -169,6 +174,10 @@ if __name__ == '__main__':
         print("       with DEPTH hidden layers of WIDTH units, DROP_IN")
         print("       input dropout and DROP_HID hidden dropout,")
         print("       'cnn' for a simple Convolutional Neural Network (CNN).")
+        print("       'custom_cnn:NCONVLAYERS,FILTERWIDTH,NCHANNELS,")
+        print("                   NFCLAYERS, WIDTH, DROP for a CNN architecture")
+        print("                   with NCONVLAYERS convolutional layers with")
+        print("                   NCHANNELS x FILTERWIDTH x FILTERWIDTH filters")
         print("EPOCHS: number of training epochs to perform (default: 500)")
     else:
         kwargs = {}

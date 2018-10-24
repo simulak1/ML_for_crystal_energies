@@ -17,7 +17,7 @@ def imgplot(params,layer,Niter,Nchannel,xcol,ycol):
                 ax[j,k].imshow(params[i][layer][ch][0])
                 ch=ch+1
         fig.canvas.draw()
-        plt.pause(1)
+        plt.pause(.1)
 
 def lineplot(params,N,layer,Niter,Nchannels):
     x=params[0][layer].flatten(0)
@@ -43,6 +43,9 @@ def main(layer=0, N_samples=10, plt_type='lineplot',speed=1,xcol=1,ycol=1):
     with np.load('params.npz') as f:
         param_values = [f['arr_%d' % i] for i in range(len(f.files))]
 
+    for i in range(len(param_values[0])):
+        print(param_values[0][i].shape)
+    
     Niter=len(param_values)
 
     LayerIndex=2*layer
@@ -52,9 +55,9 @@ def main(layer=0, N_samples=10, plt_type='lineplot',speed=1,xcol=1,ycol=1):
     NChannels=param_values[0][LayerIndex].shape[0]
 
     if(plt_type=='lineplot'):
-        lineplot(param_values,N_samples,layer,Niter,NChannels)
+        lineplot(param_values,N_samples,LayerIndex,Niter,NChannels)
     elif(plt_type=='imgplot'):
-        imgplot(param_values,layer,Niter,NChannels,xcol,ycol)
+        imgplot(param_values,LayerIndex,Niter,NChannels,xcol,ycol)
         
 if __name__ == '__main__':
     if ('--help' in sys.argv) or ('-h' in sys.argv):
