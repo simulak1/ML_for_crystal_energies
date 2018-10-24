@@ -29,7 +29,7 @@ def load_data(indices,datapath):
     '''
 
     materials=[]
-    rawdata=pandas.read_csv(datapath+"/train.csv",header=None)
+    rawdata=pandas.read_csv(datapath+"/data/train.csv",header=None)
     for i in indices:
         La=np.zeros((3,3))
         with open(datapath+"/data/train/"+str(i+1)+"/geometry.xyz") as f:
