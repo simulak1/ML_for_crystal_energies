@@ -72,7 +72,7 @@ def main(model='mlp', num_epochs=500,continuation_run=0,target_property='Ef'):
     # Descent (SGD) with Nesterov momentum, but Lasagne offers plenty more.
     params = lasagne.layers.get_all_params(network, trainable=True)
     updates = lasagne.updates.adam(
-        loss, params, learning_rate=0.005, beta1=0.9, beta2=0.999,epsilon=1e-08)
+        loss, params, learning_rate=0.0005, beta1=0.9, beta2=0.999,epsilon=1e-08)
     # Nesterov: #    loss, params, learning_rate=0.005, momentum=0.4)
     #Adam: #            loss, params, learning_rate=0.005, beta1=0.9, beta2=0.999,epsilon=1e-08)
 
