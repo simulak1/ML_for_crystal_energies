@@ -128,13 +128,14 @@ def build_custom_cnn(input_var=None,convdepth=1, filterwidth=5, nch=9, fcdepth=1
     network = lasagne.layers.InputLayer(shape=(None, 1, 80, 80),
                                         input_var=input_var)
 
-    nonlin = lasagne.nonlinearities.rectify
+    nonlin = lasagne.nonlinearities.elu
     for _ in range(convdepth):
         network = lasagne.layers.Conv2DLayer(
             network, num_filters=nch, filter_size=(filterwidth, filterwidth),
             nonlinearity=nonlin, W=lasagne.init.GlorotUniform())
         network = lasagne.layers.MaxPool2DLayer(network, pool_size=(2, 2))
 
+    nonlin = lasagne.nonlinearities.elu
     for _ in range(fcdepth-1):
         network = lasagne.layers.DenseLayer(
             lasagne.layers.dropout(network, p=drop),
