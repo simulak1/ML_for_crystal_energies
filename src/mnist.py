@@ -27,7 +27,7 @@ import lasagne
 
 # ############################## Main program ################################
 
-def main(model='mlp', num_epochs=500,continuation_run=0,target_property='Ef',datapath):
+def main(model='mlp', num_epochs=500,continuation_run=0,target_property='Ef',datapath=os.getcwd()+"/.."):
     # Load the dataset
     print("Loading data...")
     X_train, y_train, X_val, y_val, X_test, y_test = datahandle.load_ewald(target_property,datapath)
