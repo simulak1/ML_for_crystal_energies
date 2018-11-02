@@ -20,6 +20,7 @@ import numpy as np
 import theano
 import theano.tensor as T
 
+import plot_network as pn
 import datahandle
 import neural_network_structures as NNS
 
@@ -98,6 +99,7 @@ def main(model='mlp', num_epochs=500,continuation_run=0,target_property='Ef',dat
     # Initialize stuff to save for analysis of the algorithm #
     ##########################################################
     allparams=[]                                             #
+    #activations=[]                                           #
     isave=int(num_epochs/100)                                #
     if isave==0:isave=1                                      #
     train_errors=np.zeros((num_epochs,))                     #
@@ -130,6 +132,7 @@ def main(model='mlp', num_epochs=500,continuation_run=0,target_property='Ef',dat
         # Save parameters. The wrestling with isave is to ensure we don't run out of memory
         if epoch%isave==0:
             allparams.append([*lasagne.layers.get_all_param_values(network)])
+            #activations.append([*lasagne.layers.get_output(network)])
         train_errors[epoch]=train_err/train_batches
         val_errors[epoch]=val_err/val_batches
         ###################################################################################
@@ -153,6 +156,7 @@ def main(model='mlp', num_epochs=500,continuation_run=0,target_property='Ef',dat
     print("  test loss:\t\t\t{:.6f}".format(test_err / test_batches))
 
     np.savez('params.npz', *allparams)
+    #np.savez('activations.npz', *activations)
         
     # Optionally, you could now dump the network weights to a file like this:
     np.savez('model.npz', *lasagne.layers.get_all_param_values(network))
@@ -163,8 +167,9 @@ def main(model='mlp', num_epochs=500,continuation_run=0,target_property='Ef',dat
     np.save('predictions',preds)
     np.save('training_errors',train_errors)
     np.save('validation_errors',val_errors)
-    
+    pn.draw_to_file(lasagne.layers.get_all_layers(network),'png')
 
+    
 if __name__ == '__main__':
     if ('--help' in sys.argv) or ('-h' in sys.argv):
         print("Trains a neural network on MNIST using Lasagne.")
