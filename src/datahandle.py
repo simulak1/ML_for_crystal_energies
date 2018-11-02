@@ -52,15 +52,27 @@ def load_ewald(target,datapath):
 # If the size of the data is not a multiple of `batchsize`, it will not
 # return the last (remaining) mini-batch.
 
-def iterate_minibatches(inputs, targets, batchsize, shuffle=False):
+def iterate_minibatches(inputs, targets, batchsize, shuffle=False, augment=False,aug=0.0):
     assert len(inputs) == len(targets)
+    outputs=np.zeros(inputs.shape,dtype=np.float32)
+    if augment:
+        for i in range(len(inputs)):
+            norms=np.linalg.norm(inputs[i],axis=1)
+            noise=np.random.normal(0.0,aug,size=80)
+            newnorms=np.sum([norms,noise],axis=0)
+            indexlist=np.argsort(newnorms)
+            outputs[i]=inputs[i,0,indexlist,:]
+            outputs[i]=outputs[i,0,:,indexlist]
+    else:
+        outputs=inputs
+    outputs=np.float32(outputs)
     if shuffle:
-        indices = np.arange(len(inputs))
+        indices = np.arange(len(outputs))
         np.random.shuffle(indices)
-    for start_idx in range(0, len(inputs) - batchsize + 1, batchsize):
+    for start_idx in range(0, len(outputs) - batchsize + 1, batchsize):
         if shuffle:
             excerpt = indices[start_idx:start_idx + batchsize]
         else:
             excerpt = slice(start_idx, start_idx + batchsize)
-        yield inputs[excerpt], targets[excerpt]
+        yield outputs[excerpt], targets[excerpt]
 

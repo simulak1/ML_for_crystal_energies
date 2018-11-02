@@ -28,7 +28,7 @@ import lasagne
 
 # ############################## Main program ################################
 
-def main(model='mlp', num_epochs=500,continuation_run=0,target_property='Ef',datapath=os.getcwd()+"/.."):
+def main(model='mlp', num_epochs=500,continuation_run=0,target_property='Ef',datapath=os.getcwd()+"/..",reg=0.0,aug=0.0):
     # Load the dataset
     print("Loading data...")
     X_train, y_train, X_val, y_val, X_test, y_test = datahandle.load_ewald(target_property,datapath)
@@ -66,6 +66,8 @@ def main(model='mlp', num_epochs=500,continuation_run=0,target_property='Ef',dat
     prediction = lasagne.layers.get_output(network)
     loss = lasagne.objectives.squared_error(prediction, target_var)
     loss = loss.mean()
+    #Regularization
+    loss=loss+reg*lasagne.regularization.regularize_network_params(network,lasagne.regularization.l2)
     # We could add some weight decay as well here, see lasagne.regularization.
 
     # Create update expressions for training, i.e., how to modify the
@@ -73,7 +75,7 @@ def main(model='mlp', num_epochs=500,continuation_run=0,target_property='Ef',dat
     # Descent (SGD) with Nesterov momentum, but Lasagne offers plenty more.
     params = lasagne.layers.get_all_params(network, trainable=True)
     updates = lasagne.updates.adam(
-        loss, params, learning_rate=0.0005, beta1=0.9, beta2=0.999,epsilon=1e-08)
+        loss, params, learning_rate=0.00025, beta1=0.9, beta2=0.999,epsilon=1e-08)
     # Nesterov: #    loss, params, learning_rate=0.005, momentum=0.4)
     #Adam: #            loss, params, learning_rate=0.005, beta1=0.9, beta2=0.999,epsilon=1e-08)
     # Nesterov: # loss, params, learning_rate=0.005, momentum=0.4)
@@ -114,7 +116,7 @@ def main(model='mlp', num_epochs=500,continuation_run=0,target_property='Ef',dat
         train_err = 0
         train_batches = 0
         start_time = time.time()
-        for batch in datahandle.iterate_minibatches(X_train, y_train, 50, shuffle=True):
+        for batch in datahandle.iterate_minibatches(X_train, y_train, 50, shuffle=True,augment=True,aug=aug):
             inputs, targets = batch
             train_err += train_fn(inputs, targets)
             train_batches += 1
@@ -196,7 +198,11 @@ if __name__ == '__main__':
         if len(sys.argv) > 4:
             kwargs['datapath'] = sys.argv[4]
         if len(sys.argv) > 5:
-            kwargs['target_property'] = sys.argv[4]
+            kwargs['reg'] = float(sys.argv[5])
+        if len(sys.argv) > 6:
+            kwargs['aug'] = float(sys.argv[6])
+        if len(sys.argv) > 7:
+            kwargs['target_property'] = sys.argv[7]
             
             
 main(**kwargs)
